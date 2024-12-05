@@ -24,6 +24,7 @@ export default createStore({
     // Category Selection Mutations
     SET_SELECTED_CATEGORIES(state, categories) {
       state.selectedCategories = categories
+      localStorage.setItem('selectedCategories', JSON.stringify(categories)) // Store in localStorage
     },
     
     // Program Management Mutations
@@ -48,12 +49,16 @@ export default createStore({
         throw new Error('Username already exists')
       }
       
+      // Save categories after registration
+      commit('SET_SELECTED_CATEGORIES', userData.selectedCategories)
+
+      // Store user and selected categories
       users.push(userData)
       localStorage.setItem('users', JSON.stringify(users))
       commit('SET_USER', userData)
     },
     
-    login({ commit }, credentials) {
+    login({ commit, dispatch }, credentials) {
       const users = JSON.parse(localStorage.getItem('users') || '[]')
       
       const user = users.find(
@@ -61,16 +66,17 @@ export default createStore({
              u.password === credentials.password
       )
       
-      // Check if user exists
       if (user) {
-        // If admin is logging in, ensure they are treated as an admin
-        if (user.username === 'admin') {
-          commit('SET_USER', user)
-          return user
-        } else {
-          commit('SET_USER', user)
-          return user
-        }
+        commit('SET_USER', user)
+
+        // Load selected categories for the logged-in user
+        const selectedCategories = JSON.parse(localStorage.getItem('selectedCategories')) || []
+        commit('SET_SELECTED_CATEGORIES', selectedCategories)
+
+        // Trigger program recommendations after login
+        dispatch('recommendPrograms')
+
+        return user
       } else {
         throw new Error('Invalid credentials')
       }
@@ -88,26 +94,24 @@ export default createStore({
     // Program Recommendation Actions
     addProgram({ commit }, program) {
       commit('ADD_PROGRAM', program)
+
+      // Add program to localStorage for persistence
+      const allPrograms = JSON.parse(localStorage.getItem('programs') || '[]')
+      allPrograms.push(program)
+      localStorage.setItem('programs', JSON.stringify(allPrograms))
+
+      // Trigger recommendation update for all users
+      commit('SET_RECOMMENDED_PROGRAMS', allPrograms) // Optional: if you want real-time updates
     },
     
-    // Automatically create default admin if not exists
-    initializeDefaultAdmin({ commit }) {
-      const users = JSON.parse(localStorage.getItem('users') || '[]')
+    recommendPrograms({ commit, state }) {
+      // Simple recommendation based on selected categories
+      const allPrograms = JSON.parse(localStorage.getItem('programs') || '[]')
+      const recommendedPrograms = allPrograms.filter(program => 
+        state.selectedCategories.includes(program.category)
+      )
       
-      // Check if admin exists in users
-      const adminUser = users.find(u => u.username === 'admin')
-
-      if (!adminUser) {
-        // If no admin exists, create the default admin user
-        const defaultAdmin = {
-          username: 'admin',
-          password: 'admin', // Change this to a more secure password in production
-        }
-
-        users.push(defaultAdmin)
-        localStorage.setItem('users', JSON.stringify(users))
-        commit('SET_USER', defaultAdmin) // Log in the admin automatically
-      }
+      commit('SET_RECOMMENDED_PROGRAMS', recommendedPrograms)
     }
   },
   getters: {
