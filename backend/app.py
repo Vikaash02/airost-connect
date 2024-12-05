@@ -1,10 +1,9 @@
-# backend/app.py
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from recommendation_engine import ProgramRecommender
 
 app = Flask(__name__)
-CORS(app)
+CORS(app)  # Ensures that the frontend can communicate with the backend
 
 recommender = ProgramRecommender()
 
