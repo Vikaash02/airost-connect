@@ -1,5 +1,4 @@
 import { createStore } from 'vuex'
-import axios from 'axios'
 
 export default createStore({
   state: {
@@ -62,9 +61,16 @@ export default createStore({
              u.password === credentials.password
       )
       
+      // Check if user exists
       if (user) {
-        commit('SET_USER', user)
-        return user
+        // If admin is logging in, ensure they are treated as an admin
+        if (user.username === 'admin') {
+          commit('SET_USER', user)
+          return user
+        } else {
+          commit('SET_USER', user)
+          return user
+        }
       } else {
         throw new Error('Invalid credentials')
       }
@@ -80,15 +86,27 @@ export default createStore({
     },
     
     // Program Recommendation Actions
-    async recommendPrograms({ commit, state }) {
-      try {
-        const response = await axios.post('http://localhost:5000/recommend', {
-          categories: state.selectedCategories
-        })
-        
-        commit('SET_RECOMMENDED_PROGRAMS', response.data)
-      } catch (error) {
-        console.error("Error fetching recommendations:", error)
+    addProgram({ commit }, program) {
+      commit('ADD_PROGRAM', program)
+    },
+    
+    // Automatically create default admin if not exists
+    initializeDefaultAdmin({ commit }) {
+      const users = JSON.parse(localStorage.getItem('users') || '[]')
+      
+      // Check if admin exists in users
+      const adminUser = users.find(u => u.username === 'admin')
+
+      if (!adminUser) {
+        // If no admin exists, create the default admin user
+        const defaultAdmin = {
+          username: 'admin',
+          password: 'admin', // Change this to a more secure password in production
+        }
+
+        users.push(defaultAdmin)
+        localStorage.setItem('users', JSON.stringify(users))
+        commit('SET_USER', defaultAdmin) // Log in the admin automatically
       }
     }
   },
