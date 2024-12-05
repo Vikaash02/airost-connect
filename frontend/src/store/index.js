@@ -1,5 +1,5 @@
-// src/store/index.js
 import { createStore } from 'vuex'
+import axios from 'axios'
 
 export default createStore({
   state: {
@@ -80,18 +80,16 @@ export default createStore({
     },
     
     // Program Recommendation Actions
-    addProgram({ commit }, program) {
-      commit('ADD_PROGRAM', program)
-    },
-    
-    recommendPrograms({ commit, state }) {
-      // Simple recommendation based on selected categories
-      const allPrograms = JSON.parse(localStorage.getItem('programs') || '[]')
-      const recommendedPrograms = allPrograms.filter(program => 
-        state.selectedCategories.includes(program.category)
-      )
-      
-      commit('SET_RECOMMENDED_PROGRAMS', recommendedPrograms)
+    async recommendPrograms({ commit, state }) {
+      try {
+        const response = await axios.post('http://localhost:5000/recommend', {
+          categories: state.selectedCategories
+        })
+        
+        commit('SET_RECOMMENDED_PROGRAMS', response.data)
+      } catch (error) {
+        console.error("Error fetching recommendations:", error)
+      }
     }
   },
   getters: {
