@@ -1,3 +1,4 @@
+<!-- src/components/ProgramList.vue -->
 <template>
   <div class="container mx-auto p-6">
     <h2 class="text-2xl font-bold mb-6 text-center text-airost-primary">
@@ -26,8 +27,14 @@
 
 <script>
 export default {
-  props: {
-    programs: Array
+  computed: {
+    programs() {
+      return this.$store.getters.recommendedPrograms
+    }
+  },
+  created() {
+    // Trigger recommendation when component is created
+    this.$store.dispatch('recommendPrograms')
   }
 }
 </script>
